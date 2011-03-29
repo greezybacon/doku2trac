@@ -1,5 +1,5 @@
 `doku2trac` is an extensible shell script for converting your *DokuWiki* pages
-into *trac*'s wiki format.
+into *Trac*'s wiki format.
 
 Converting Pages
 ================
@@ -10,16 +10,16 @@ Pipes
 -----
 Pipes are the Unix mantra. Who doesn't love building a ridiculous pipeline
 of commands to get things done with a series of simple tools. doku2trac can
-read a *DokuWiki* page from standard-in and write the *trac* page to 
+read a *DokuWiki* page from standard-in and write the *Trac* page to 
 standard-out
 
     cat /path/to/dokuwiki/data/pages/start.txt | doku2trac
 
-Or even import it directly into trac using `trac-admin`
+Or even import it directly into Trac using `trac-admin`
 
     cat /path/to/start.txt | doku2trac | trac-admin /path/to/project wiki import <page-name>
 
-Note that some versions of *trac* cannot import from standard-in. This is 
+Note that some versions of *Trac* cannot import from standard-in. This is 
 also a pretty convoluded command line.
 
 Multiple Pages
@@ -34,8 +34,13 @@ output folder with the `-f` option
 
     doku2trac -d /path/to/dokuwiki start [page2 [...]] -f output
 
-Will write the trac wiki output to individual pages in the `output/` folder
-of the current path.
+Will write the Trac wiki output to individual pages in the `output/` folder
+of the current path. You can use `trac-admin` to import all of the converted
+pages at once
+
+    trac-admin <project> wiki load <output>
+
+will load all the files in the `output/` folder into *Trac*'s wiki.
 
 Using Trac-Admin
 ----------------
@@ -43,10 +48,10 @@ Some versions of `trac-admin` don't support importing wiki pages from stdin,
 and converting each page in this manner might be a bit laborious, so you can
 let `doku2trac` do a little more work.
 
-    doku2trac -t /path/to/trac/project -d /path/to/dokuwiki start
+    doku2trac -t /path/to/Trac/project -d /path/to/dokuwiki start
 
 Will convert the *start* page of *DokuWiki* and use `trac-admin` to import it
-into trac. The page name will be kept the same and converted to *trac*'s
+into Trac. The page name will be kept the same and converted to *Trac*'s
 CamelCase convention.
 
 Direct Database Import
@@ -60,14 +65,14 @@ data, if any.
 Generate SQL statements for use as a script in your favorite database
 client
 
-    doku2trac -d /path/to/dokuwiki --sql --meta-data start > trac-wiki.sql
+    doku2trac -d /path/to/dokuwiki --sql --meta-data start > Trac-wiki.sql
 
-Then you can execute `trac-wiki.sql` in your favorite client for your 
-*trac* database.
+Then you can execute `Trac-wiki.sql` in your favorite client for your 
+*Trac* database.
 
-**Note:** Please be extremely careful when directly modifying *trac*'s
+**Note:** Please be extremely careful when directly modifying *Trac*'s
 database. You can easily and unexpectedly trash valuable data in your
-*trac* project(s)
+*Trac* project(s)
 
 If you'd like to automatically create **delete** statement to remove any
 existing content for the pages before inserting, you can use the 
@@ -81,9 +86,9 @@ pipe the output directly to a database administration tool
         | mysql -u <user> -p -H <host> <db>
 
 You'll be prompted for your database password, and then your wiki file(s)
-will be inserted into your *trac* database. Currently this is only 
-tested on *trac* version 0.11, but appears to conform to the [database
-schema](http://trac.edgewall.org/wiki/TracDev/DatabaseSchema) of
+will be inserted into your *Trac* database. Currently this is only 
+tested on *Trac* version 0.11, but appears to conform to the [database
+schema](http://Trac.edgewall.org/wiki/TracDev/DatabaseSchema) of
 version 0.12.
 
 Options
@@ -95,7 +100,7 @@ All
 Instructs `doku2trac` to convert *all* versions of each page. This is 
 mostly useful when using the `--sql` or `--trac-admin` switches, since 
 those are currently the only methods useful for importing all the versions 
-of a wiki page into *trac*. If `--sql` is used, SQL insert statements are
+of a wiki page into *Trac*. If `--sql` is used, SQL insert statements are
 emitted for each version of the page. If `--trac-admin` is specified, then
 `trac-admin` is used to import each of the wiki pages from oldest to newest
 
@@ -135,13 +140,13 @@ Dump page metadata with the page as well. This will work with any output
 method but makes the most sense with the `--sql` switch. Metadata supported
 currently includes
 
-    * Doku page name
-    * Last modified time
-    * Author
-    * Source IP address of author
-    * Edit comments
-    * Trac page name (*)
-    * Trac version number (*)
+* Doku page name
+* Last modified time
+* Author
+* Source IP address of author
+* Edit comments
+* Trac page name (*)
+* Trac version number (*)
 
 (*) These items are always generated with the `--sql` switch, because the
 comprise the primary key for the database.
@@ -152,18 +157,18 @@ Page Name Conversion
 
 Where `<type>` is one of
 
-    * CamelCase
+*   CamelCase
 
-      This is the default. Pages are converted to *trac*'s 
-      CamelCasePageName. A Doku page named `path:to:page_name` will be 
-      translated to PathToPageName
+    This is the default. Pages are converted to *Trac*'s 
+    CamelCasePageName. A Doku page named `path:to:page_name` will be 
+    translated to PathToPageName
 
-    * CamelPath
+*   CamelPath
 
-      This is a hybrid scheme similar to CamelCase, except *DokuWiki*'s
-      namespace is preserved. So the `:` part of the page names is converted
-      to a `/`. So the page named `path:to:page_name` will be translated
-      to `Path/To/PageName`
+    This is a hybrid scheme similar to CamelCase, except *DokuWiki*'s
+    namespace is preserved. So the `:` part of the page names is converted
+    to a `/`. So the page named `path:to:page_name` will be translated
+    to `Path/To/PageName`
 
 This conversion affects both page names and links to other wiki pages.
 
@@ -197,9 +202,9 @@ Trac Admin
     -t, --trac-admin <project>
 
 Using `trac-admin` is the safest method for importing wiki pages 
-automatically. To use it, you must specify the location of the *trac*
+automatically. To use it, you must specify the location of the *Trac*
 project to administer. Use this option to specify the location of the
-*trac* project.
+*Trac* project.
 
 Extensions
 ==========
@@ -216,10 +221,10 @@ generated for each of your imported pages, use the *toc* extension
     --auto-toc
 
 **Note:** You will need to install the *TocMacro* plugin for this to 
-actually work in *trac*.
+actually work in *Trac*.
 
 Images
 ------
 Images links are automatically converted; however, `trac-admin` does not
 provide a mechanism for importing wiki images. Therefore, for now, a warning
-is emitted indicating that you need to import the image into trac manually.
+is emitted indicating that you need to import the image into *Trac* manually.
