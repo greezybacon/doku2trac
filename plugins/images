@@ -1,0 +1,49 @@
+# Doku2Trac plugin supporting conversion but not importation of image
+# links in Dokuwiki pages
+# vim: ft=sh:
+
+PLUGINS="$PLUGINS images"
+
+images_help() {
+    return 0
+}
+
+# Arguments:
+# 1 - Argument (with - and --)
+# 2 - Value
+images_handle_options() {
+    return 0
+}
+
+images_preconvert() {
+    return 0
+}
+
+images_tracize() {
+    # Images (since we're converting, we'll plan to put the images
+    # on this page (the one being converted now) so we don't need
+    # to indicate in the Image macro where the image is)
+    cat <<SED
+    s/(^|[^{])\{\{([^{}?|]+)(\?[^}|]+)?[| ]*\}\}/\1[[:TracImage(\2)]]/
+SED
+}
+
+# Arguments:
+# 1 - wiki line
+images_postconvert() {
+    local line=$1
+    # TODO: Import image media
+    while [[ "$line" =~ ":TracImage(" ]]; do
+        HREF=${line#*:TracImage(}; HREF=${HREF%%)*}
+        # Don't interpret escape sequences
+        OLD=${HREF//\\/\\\\}
+        # If link does not contain a ':', place it in the
+        # current Doku namepsace ($2)
+        [[ ! $HREF =~ ":" ]] && HREF="$2:$HREF"
+        # Import the image into Trac
+        info "Warning: Not importing image $HREF"
+        # The image will be imported to the page
+        line=${line/:TracImage($OLD)/Image("$HREF")}
+    done
+    echo $line
+}

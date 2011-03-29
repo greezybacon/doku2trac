@@ -1,0 +1,39 @@
+# Doku2Trac plugin supporting Table Of Contents display at the top
+# of each page automatically (similar to DokuWiki default)
+# vim: ft=sh:
+
+PLUGINS="$PLUGINS toc"
+
+AUTOTOC=0
+
+toc_help() {
+cat <<EOF
+
+Auto TableOfContent Options:
+    --auto-toc          DokuWiki places a Table of Contents at the top of
+                        every page automatically. Use this option to enable
+                        the converted Trac pages to have one. 
+                        NOTE: This requires your Trac installation to have
+                              the TocMacro installed
+EOF
+}
+
+# Arguments:
+# 1 - Argument (with - and --)
+# 2 - Value
+toc_handle_options() {
+    case $1 in
+        "--auto-toc")       AUTOTOC=1;;
+        *)                  return 1;;
+    esac
+    return 0
+}
+
+toc_preconvert() {
+    # Add Table of Contents macro
+    [[ $AUTOTOC == 1 ]] && echo ":TracMacro(TOC)"
+}
+
+toc_tracize() {
+    /bin/false
+}
