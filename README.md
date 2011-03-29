@@ -80,8 +80,8 @@ pipe the output directly to a database administration tool
     doku2trac -d /path/to/dokuwiki --sql --meta-data start \
         | mysql -u <user> -p -H <host> <db>
 
-You'll be prompted for you database password, and then your wiki file(s)
-will be inserted into you *trac* database. Currently this is only 
+You'll be prompted for your database password, and then your wiki file(s)
+will be inserted into your *trac* database. Currently this is only 
 tested on *trac* version 0.11, but appears to conform to the [database
 schema](http://trac.edgewall.org/wiki/TracDev/DatabaseSchema) of
 version 0.12.
@@ -93,9 +93,11 @@ All
     -A, --all
 
 Instructs `doku2trac` to convert *all* versions of each page. This is 
-mostly useful when using the `--sql` switch, since that is currently the
-only method that is useful for importing all the versions of a wiki page
-into *trac*.
+mostly useful when using the `--sql` or `--trac-admin` switches, since 
+those are currently the only methods useful for importing all the versions 
+of a wiki page into *trac*. If `--sql` is used, SQL insert statements are
+emitted for each version of the page. If `--trac-admin` is specified, then
+`trac-admin` is used to import each of the wiki pages from oldest to newest
 
 DokuWiki Path
 -------------
@@ -190,9 +192,18 @@ Or convert your entire wiki
 
     doku2trac -d /path/to/dokuwiki -r
 
+Trac Admin
+----------
+    -t, --trac-admin <project>
+
+Using `trac-admin` is the safest method for importing wiki pages 
+automatically. To use it, you must specify the location of the *trac*
+project to administer. Use this option to specify the location of the
+*trac* project.
+
 Extensions
 ==========
-`doku2trac` was created so that *Trac* extensions or difficult conversion
+`doku2trac` was created so that *Trac* plugins or difficult conversion
 operations could be implemented as independent modules without clutering
 up the main source code.
 
