@@ -1,13 +1,10 @@
-doku2trac is an extensible shell script for converting your DokuWiki pages
-into trac's wiki format.
-
-Getting Started
-===============
-Fetch the source code via git, and you can convert your pages using a few
-different techniques:
+`doku2trac` is an extensible shell script for converting your *DokuWiki* pages
+into *trac*'s wiki format.
 
 Converting Pages
 ================
+Fetch the source code via git, and you can convert your pages using a few
+different techniques:
 
 Pipes
 -----
@@ -49,3 +46,8 @@ let `doku2trac` do a little more work.
 Will convert the *start* page of *Dokuwiki* and use `trac-admin` to import it
 into trac. The page name will be kept the same and converted to *trac*'s
 CamelCase convention.
+
+**Note:** that if `trac-admin` is not in your `PATH`, you will need to give
+the full path of its location
+
+    doku2trac -t /usr/bin/trac-admin -d /path/to/dokuwiki start
