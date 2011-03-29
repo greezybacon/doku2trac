@@ -23,10 +23,8 @@ EOF
 # 2 - Value
 toc_handle_options() {
     case $1 in
-        "--auto-toc")       AUTOTOC=1;;
-        *)                  return 1;;
+        "--auto-toc")       AUTOTOC=1; return 1;;
     esac
-    return 0
 }
 
 toc_preconvert() {

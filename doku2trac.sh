@@ -132,7 +132,7 @@ while [[ -n $1 ]]; do
                     ${plugin}_handle_options $1 $2
                     status=$?
                     [[ $status == 2 ]] && shift
-                    if [[ $status != 1 ]]; then valid=0; break; fi
+                    if [[ $status > 1 ]]; then valid=0; break; fi
                 done
                 if [[ $valid != 0 ]]; then
                     info "Error: $1: Invalid option specified"
@@ -146,6 +146,7 @@ while [[ -n $1 ]]; do
 done
 
 isExcluded() {
+    set -f
     for pattern in "${EXCLUDE[@]}"; do
         [[ -z ${1##${pattern}} ]] && { set +f; return 0; }
     done
