@@ -274,6 +274,7 @@ PLUGIN_SED=$(
 tracize() {
     # Don't bother with non-existent or unreadable files
     [[ ! -r $1 ]] && return -1
+    # XXX Move this out
     # Compile a list of plugins that define postconvert()
     local postconverters=()
     for plugin in ${PLUGINS[@]}; do
@@ -288,15 +289,17 @@ tracize() {
         # Add trailing newline for bottom ( while read line ) section to
         # detect the last line properly
         echo; 
-    } | sed -nr "
+    } | sed -nE "
         # Non wiki markup sections
         # Handle inline code, file, and html blocks. 
         # XXX: Continuing will cause format conversion to happen for 
         #      the contained content
         s/<(code|file|html)>([^<]+)<\/\1>/\n{{{\n\2\n}}}\n/g; t continue
-        s/<(code|file|html)( [^>]+)>([^<]+)<\/\1>/\n{{{\n#!\2\n\3\n}}}\n/g; t continue
+        s/<(code|file|html) ([^>]+)>([^<]+)<\/\1>/\n{{{\n#!\2\n\3\n}}}\n/g; t continue
         
         # Skip down to the close section and skip any further transformations
+        # XXX: This does not handle <nowiki> blocks because I have not
+        #      found an equivalent for Trac. Also doesn't handle %% blocks
         /<(html|nowiki)>/,/<\/(html|nowiki)>/ {
             s:<nowiki>:{{{\n#!span:
             # HTML sections
@@ -306,10 +309,7 @@ tracize() {
                 p; b
             }
         }
-        # XXX: This does not handle <nowiki> blocks because I have not
-        #      found an equivalent for Trac
-
-        /<code( [^>]+)?>/,/<\/code>/ {
+        /<code ([^>]+)?>/,/<\/code>/ {
             # Handle inline <code> blocks
             s:</code>([^ ]+|$):\n}}}\n\1:
             s/((^|\n)\s*\S.*)<code>/\1\n{{{\n/
@@ -317,10 +317,10 @@ tracize() {
 
             s/<code>/{{{/
             s/<code ([^>]+)>/{{{\n#!\1/
-            #s:</code>:}}}:
+            s:</code>:}}}:
             p; b
         }
-        /<file( [^>]+)?>/,/<\/file>/ {
+        /<file ([^>]+)?>/,/<\/file>/ {
             # Handle inline <file> blocks
             s:</file>([^ ]+|$):\n}}}\n\1:
             s/((^|\n)\s*\S.*)<file>/\1\n{{{\n/
@@ -338,15 +338,22 @@ tracize() {
         # for lists!). 
         /^  +[^ *-]/ {
             # First one gets {{{
-            i \{\{\{
+            i\ 
+            {{{
             :loop
-            /^  +[^ *-]/ { s/^  //; p; n; b loop; }
+            /^  +[^ *-]/ { 
+                s/^  //; p; n; b loop
+            }
             # Prepend }}} before following lines
-            i \}\}\}
+            i\ 
+            }}}
         }
         # ! is special in Trac, so make sure there is a space or
         # end-of-line after '!' characters
         s/!([^ !])/! \1/g
+        # #49 refers to tickets in Trac. If we find a hash followed by a 
+        # number, it needs to be escaped
+        s/#([0-9]+)/!#\1/g
     
         :continue
         # NOTE: Hereafter, the buffer may contain multiple lines, in which
@@ -361,7 +368,7 @@ tracize() {
         s/''(([^']|'[^'])+)''/\`\1\`/g
         # Handle leading '*' to indicate unordered list
         s/\*\*([^*]([^*]|[*][^*])*)\*\*/'''\1'''/g
-        s://(([^/]|[/][^/])+)//:''\1'':g
+        s:([^:])//(([^/]|[/][^/])+)//:\1''\2'':g
         s:<del>|</del>:~~:g
 
         # Headers -- Handle unbalanced '=' counts, since Doku accepts
@@ -427,7 +434,8 @@ tracize() {
         # http://trac-hacks.org/wiki/FootNoteMacro)
         s/\(\((([^)]|\)[^)])+)\)\)/[[FootNote\(\1\)]]/g
 
-        # Trac macros added in already (like TOC)
+        # Trac macros added in already (like TOC). We need this because
+        # double brackets used by Trac macros are used for Doku links
         s/:TracMacro\(([^)]+)\)/[[\1]]/g
         
         # CamelCase words should have a preceeding !
@@ -451,12 +459,16 @@ tracize() {
                         tracPageName "$LINK")}
                 else
                     [[ ! $LINK =~ ":" ]] && LINK="$2:$LINK"
-                    line=${line/:TracPageLink($OLD)/wiki:$(\
-                        tracPageName "$LINK")}
+                    if [[ $LINK =~ "http://" || $LINK =~ "https://" ]]; then
+                        line=${line/:TracPageLink($OLD)/$LINK}
+                    else
+                        line=${line/:TracPageLink($OLD)/wiki:$(\
+                            tracPageName "$LINK")}
+                    fi
                 fi
             done
             for plugin in ${postconverters[@]}; do
-                returned=$(${plugin}_postconvert $line)
+                returned=$(${plugin}_postconvert "$line" $2)
                 line=${returned:-${line}}
             done
             echo "$line"
@@ -471,14 +483,14 @@ tracPageName() {
         CamelCase)
             # (1) Convert leading character to uppercase
             # (2) Convert -, :, ' ', and _ to camelcase
-            echo ${PAGEPREFIX}$(echo $1 | sed -re "s/^(.)/\U\1/" \
+            echo ${PAGEPREFIX}$(echo $1 | sed -Ee "s/^(.)/\U\1/" \
                 -e "s/[:_ -]+(.)/\U\1/g");;
         CamelPath)
             # (1) Convert leading character to uppercase
             # (2) Convert : to / and capitalize following char
             # (3) Convert -, _ and ' ' to camelcase
             echo ${PAGEPREFIX:+${PAGEPREFIX}/}$(echo $1 | \
-                sed -re "s/^(.)/\U\1/" -e "s/:+(.)/\/\U\1/g" \
+                sed -Ee "s/^(.)/\U\1/" -e "s/:+(.)/\/\U\1/g" \
                     -e "s/[_ -]+(.)/\U\1/g");;
         *)
             # Leave pagename alone
@@ -489,14 +501,13 @@ tracPageName() {
 # Arguments:
 # $@ - Array
 _args_to_list() {
-    {
-        while [[ -n $1 ]]; do
-            # Escape single quotes and backslashes
-            echo -n "${1}"
-            [[ -n $2 ]] &&  echo -n "!~S~!"
-            shift
-        done
-    } | sed -e "s:':'':g" -e 's:\\:\\\\:g' -e "s:!~S~!:${SEP:-,}:g"
+    while [[ -n $1 ]]; do
+        # Escape single quotes and backslashes
+        echo -n "${1}"
+        [[ -n $2 ]] &&  echo -n "!~S~!"
+        shift
+    done \
+    | sed -e "s:':'':g" -e 's:\\:\\\\:g' -e "s:!~S~!:${SEP:-,}:g"
 }
 
 # Arguments:
