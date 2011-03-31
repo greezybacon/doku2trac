@@ -30,6 +30,7 @@ SED
 
 # Arguments:
 # 1 - wiki line
+# 2 - current namespace
 images_postconvert() {
     local line=$1
     # TODO: Import image media
